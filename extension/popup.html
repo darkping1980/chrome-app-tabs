@@ -1,0 +1,69 @@
+<!doctype html>
+<!--
+  Chrome App Tabs - https://github.com/darkping1980/chrome-app-tabs
+  Copyright (C) 2026 darkping1980
+  SPDX-License-Identifier: GPL-3.0-only
+  This program comes with ABSOLUTELY NO WARRANTY. It is free software: you can redistribute it
+  and/or modify it under the terms of the GNU General Public License version 3 (see LICENSE).
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="ui.css">
+<style>
+  body { width: 460px; margin: 0; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 14px; margin: 0; }
+  section { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  section h2 { font-size: 12px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  ul { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; }
+  li { display: flex; gap: 8px; align-items: center; padding: 6px; border-radius: 6px; }
+  li img { width: 20px; height: 20px; flex: none; }
+  li .grow { flex: 1; min-width: 0; }
+  li .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li .p { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #candidates li { cursor: pointer; } #candidates li:hover { background: var(--hover); }
+  #candidates li.linked { opacity: .55; }
+  .name { width: 100%; box-sizing: border-box; }
+  .empty { color: var(--muted); padding: 6px; }
+  kbd { font: 11px ui-monospace, monospace; border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; }
+  #shortcuts div { margin: 2px 0; }
+</style>
+</head>
+<body>
+  <header><h1>App Tabs</h1><span id="host" class="badge">호스트 확인 중…</span></header>
+  <section id="updateNote" hidden>
+    <b>새 버전이 설치되었습니다.</b> <span id="updateText"></span><br>
+    chrome://extensions 에서 App Tabs 카드의 새로고침(↻)을 한 번 눌러 주세요. 연결 정보와 설정은 유지됩니다.
+    <div class="row" style="margin-top:6px"><button id="openExt">확장 프로그램 페이지 열기</button></div>
+  </section>
+
+  <section>
+    <h2>연결된 프로그램</h2>
+    <ul id="apps"></ul>
+  </section>
+
+  <section>
+    <h2>프로그램 추가</h2>
+    <div class="row">
+      <input type="text" id="q" placeholder="창 제목·프로그램 이름으로 찾기" style="flex:1">
+      <button id="refresh">새로고침</button>
+    </div>
+    <div class="row">추가할 Chrome 창: <select id="win"></select></div>
+    <ul id="candidates"></ul>
+    <div id="err" class="error"></div>
+  </section>
+
+  <section>
+    <h2>설정</h2>
+    <div class="row">다른 탭 선택 시: <select id="mode"><option value="zorder">Chrome 뒤로 보내기 (권장)</option><option value="minimize">최소화</option></select></div>
+    <div class="row"><label><input type="checkbox" id="peek"> 주소창을 쓰는 동안 프로그램을 잠시 숨기기</label></div>
+    <div class="row"><label><input type="checkbox" id="dragAdd"> 프로그램 제목 표시줄을 Chrome 탭 표시줄로 끌어다 놓아 추가</label></div>
+    <div id="shortcuts"></div>
+    <div class="row"><button id="keys">단축키 변경…</button></div>
+  </section>
+  <footer style="padding:8px 12px;font-size:11px;color:var(--muted)">App Tabs · © 2026 darkping1980 · GPL-3.0 · <a href="https://github.com/darkping1980/chrome-app-tabs" target="_blank">소스 코드·라이선스</a></footer>
+  <script src="popup.js"></script>
+</body>
+</html>

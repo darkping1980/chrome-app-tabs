@@ -1,0 +1,41 @@
+# build output (rebuild with host\build.ps1)
+host/bin/
+tests/bin/
+bin/
+obj/
+*.exe
+*.pdb
+*.dll
+
+# dependencies / caches
+node_modules/
+.vs/
+.vscode/
+__pycache__/
+
+# secrets and keys (the extension only needs the PUBLIC key in manifest.json)
+*.pem
+*.key
+*.pfx
+.env
+.env.*
+
+# test runtime data: temp Chrome profiles / VS Code user-data contain cookies and settings
+chrome-profile/
+vscode-data/
+vscode-ext/
+shots/
+
+# logs, test results and temp files (test output can contain local user paths: never commit it)
+*.log
+tests/results/
+*results.json
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini
+dist/
+
+# screenshots: only curated, privacy-checked images under docs/images/ are committed
+*.png
+!docs/images/*.png

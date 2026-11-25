@@ -1,0 +1,16 @@
+/*
+ * Chrome App Tabs - https://github.com/darkping1980/chrome-app-tabs
+ * Copyright (C) 2026 darkping1980
+ * SPDX-License-Identifier: GPL-3.0-only
+ * This program comes with ABSOLUTELY NO WARRANTY. It is free software: you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License version 3 (see LICENSE).
+ */
+:root { color-scheme: light dark; --line: #8884; --muted: #888; --hover: #8882; --ok: #1a7f37; --warn: #b35900; --bad: #c62828; }
+body { font: 13px system-ui, "Malgun Gothic", sans-serif; background: Canvas; color: CanvasText; }
+button { font: inherit; padding: 3px 10px; cursor: pointer; }
+input[type=text], select { font: inherit; padding: 3px 6px; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--line); white-space: nowrap; }
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.badge.warn { color: var(--warn); border-color: var(--warn); }
+.badge.bad { color: var(--bad); border-color: var(--bad); }
+.error { color: var(--bad); white-space: pre-wrap; }

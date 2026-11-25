@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "App Tabs",
+  "version": "0.3.2",
+  "description": "Show a running Windows program (e.g. VS Code) as a Chrome tab. Requires the AppTabsHost native host.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2G49ryIXARiztgSgIKZkbtknseJJd5CY/QSfqkJNfVLBEp7H3gjFI/HA8CSUZdsV39ThEaU0kCGSosLEgUbNb81IjFGVdxyRD7+yRnfCKaFBeFWs/d9+axP6LCR7NfTJuXSijVR9wnhJJfwdv8JL/eL8BBnO620RaCi9rdJhP7aGXR6x+9X/65BiYbKSz2QlEK4AKyrUJZHsMndu4flGI9Mm4uSq/RaYpr/u7bjRLWvYo3Obev6gqtRmm3Ql1Rvtzgo7jYNmlJAU6CBkAGDlxT6EnCCAUg+DKXYLD/BmZlKBQ7xoyJNyhfvHxR4WSFPinGOoDTwE8cmC/9eqagYN5wIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "tabs",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "App Tabs"
+  },
+  "commands": {
+    "toggle-app": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+7"
+      },
+      "description": "외부 프로그램 탭 ↔ 직전 웹 탭 전환",
+      "global": true
+    },
+    "prev-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+8"
+      },
+      "description": "이전 탭으로 이동",
+      "global": true
+    },
+    "next-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+9"
+      },
+      "description": "다음 탭으로 이동",
+      "global": true
+    }
+  }
+}
