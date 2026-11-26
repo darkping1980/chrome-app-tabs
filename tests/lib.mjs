@@ -12,7 +12,9 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const PROBE = path.join(ROOT, 'tests', 'bin', 'probe.exe');
 export const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-export const CODE = path.join(process.env.LOCALAPPDATA, 'Programs', 'Microsoft VS Code', 'Code.exe');
+// APPTABS_CODE overrides it, e.g. with a portable copy while the installed VS Code has an update pending (it then
+// refuses to start a second instance)
+export const CODE = process.env.APPTABS_CODE || path.join(process.env.LOCALAPPDATA, 'Programs', 'Microsoft VS Code', 'Code.exe');
 export const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 export function probe(...args) {

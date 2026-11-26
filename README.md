@@ -36,7 +36,7 @@ the Chrome you already use, so you can switch between web pages and desktop prog
 
 - **Your own Chrome, unchanged.** Same profile, sign-in, bookmarks, cookies and extensions. No separate browser.
 - **Any normal Windows program** can become a Chrome tab: VS Code, DBeaver, File Explorer, Notepad, and so on.
-- **Drag and drop:** drag a program's title bar onto the Chrome tab strip to add it.
+- **Drag and drop:** drag a program's title bar onto the top of a Chrome window (tab strip or address bar) to add it.
 - **Management popup:** add, rename, move to, reopen or disconnect program tabs from the toolbar popup.
 - **Fast switching** between web pages and desktop programs, with optional global shortcuts.
 - **No changes to the programs.** Their files, settings and memory are never touched.
@@ -89,7 +89,7 @@ You do not need to clone or build anything. Everything comes from the GitHub rel
 2. Under **Assets**, download **`ChromeAppTabs-vX.Y.Z.zip`** (the latest stable version).
 3. (Optional) Check that the download is not damaged. Compare the result with the `.sha256` file on the same page:
    ```powershell
-   Get-FileHash .\ChromeAppTabs-v0.3.2.zip -Algorithm SHA256
+   Get-FileHash .\ChromeAppTabs-v0.3.3.zip -Algorithm SHA256
    ```
 
 ### Step 2 – Extract and run the installer
@@ -117,7 +117,7 @@ You do not need to clone or build anything. Everything comes from the GitHub rel
 11. With the **`extension`** folder open (or selected), click **Select Folder**.
 12. The **App Tabs** card appears and is enabled. Its ID is `bahmlmpijalpgcnbnkgplggendgjhdlk`.
 13. Click the **puzzle icon** (Extensions) in the Chrome toolbar and **pin** App Tabs.
-14. Click the **App Tabs** icon. The badge at the top right should say **호스트 v0.3.2 연결됨** ("host v0.3.2 connected").
+14. Click the **App Tabs** icon. The badge at the top right should say **호스트 v0.3.3 연결됨** ("host v0.3.3 connected").
 15. In the popup's **설정** (Settings) section, check that **프로그램 제목 표시줄을 Chrome 탭 표시줄로 끌어다 놓아 추가** (drag-and-drop) is ticked. It is on by default.
 
 > **Common mistakes**
@@ -130,11 +130,14 @@ You do not need to clone or build anything. Everything comes from the GitHub rel
 ### Add a program by drag and drop
 
 1. Start the program (for example, VS Code).
-2. Grab the program window by its **title bar** and drag it onto the **Chrome tab strip** (the top row where the tabs are).
+2. Grab the program window by its **title bar** and drag it onto the **top of a Chrome window**: the tab strip, the address bar
+   row or the bookmarks bar. This also works when Chrome is maximized.
 3. A **blue drop zone** appears ("여기에 놓으면 Chrome 탭으로 추가" = "drop here to add as a Chrome tab"). Release the mouse.
 4. A new tab with the program's name and icon appears in that Chrome window, and the program is shown in the page area.
 
-- Released outside the tab strip, the window just moves as usual.
+- Released anywhere else (for example over the web page), the window just moves as usual.
+- If you touch the very top edge of the screen, Windows Snap takes over there (maximize / Snap layouts). Move the
+  mouse down a little and back up onto Chrome to drop again.
 - Press **Esc** while dragging to cancel; the window goes back.
 - A program that is already a tab is not added twice.
 
@@ -231,12 +234,14 @@ Also check that the extension ID is `bahmlmpijalpgcnbnkgplggendgjhdlk`: it must 
 
 **Drag and drop does nothing.**
 Check that the drag-and-drop setting is on in the popup and the host is connected. Drag by the program's **title bar**
-(not by a tab or toolbar inside the program) and release over the **tab strip** of a Chrome window. If it still does not work,
+(not by a tab or toolbar inside the program) and release over the **tab strip or address bar** of a Chrome window, where the
+blue zone is shown. If it still does not work,
 add the program from the popup instead.
 
-**Dragging onto a maximized Chrome window maximizes my program instead.**
-When Chrome is maximized its tab strip is at the very top of the screen, where Windows Snap reacts first. Restore Chrome
-to a normal (non-maximized) window before dragging, or add the program from the popup.
+**Dragging onto a maximized Chrome window maximizes or snaps my program instead.**
+The very top edge of the screen belongs to Windows Snap. Since v0.3.3 the whole address bar row is a drop zone as well,
+so release a little lower (on the tabs or the address bar). After touching the top edge, move the mouse down once
+(about 120 px) before dropping, because the Snap layouts bar may still be open there.
 
 **After an update I still see the old version / the popup says "새 버전이 설치되었습니다".**
 Open `chrome://extensions` and click **↻** on the App Tabs card. Reopen closed program tabs with **탭 다시 열기**.
@@ -254,7 +259,8 @@ The release is not code-signed. See the note in [Install](#step-2--extract-and-r
 
 **Multiple monitors.**
 Moving Chrome to another monitor and dragging onto a Chrome window on another monitor were tested on monitors with the
-**same** scaling (100%). Monitors with **different** display scaling (DPI) have **not** been tested yet. Please report problems in Issues.
+**same** scaling (100%). Monitors with **different** display scaling (DPI) are handled in the code (physical pixels,
+per-monitor scale) and unit tested, but have **not** been tested on real hardware yet. Please report problems in Issues.
 
 **How do I remove a program from Chrome without closing it?**
 Use **연결 해제** (Disconnect) in the popup, or simply close the program tab. The program keeps running.
@@ -265,7 +271,7 @@ No. Only Google Chrome is supported.
 ## Known limitations
 
 - **Not embedded:** the program is overlaid on Chrome, not inside it. The program's own title bar is visible, and its own close button (X) really closes the program.
-- **Maximized Chrome + drag and drop:** Windows Snap may win (see FAQ).
+- **Top screen edge + drag and drop:** the top edge belongs to Windows Snap; drop a little lower (see FAQ).
 - **Manual reload after update:** you must click ↻ on the App Tabs card after each update; the reload closes program tabs (reopen them from the popup).
 - **UWP apps** (e.g. Calculator) get the tab name "Application Frame Host". Rename the tab in the popup.
 - **Not tested:** monitors with different DPI scaling, programs running as administrator (Windows UIPI is expected to prevent control), Windows 10.
@@ -314,8 +320,9 @@ docs/        MANUAL.md / MANUAL.ko.md (included in the release ZIP), images/
   to a JSON manifest that allows only the extension ID `bahmlmpijalpgcnbnkgplggendgjhdlk`.
 - The extension ID is fixed by the **public** key in `extension/manifest.json`. That key is public by design;
   no private signing key is needed or stored in this repository.
-- Drag to add uses out-of-process `SetWinEventHook` (move/size start/end) and UI Automation (read-only) to find the tab strip;
-  nothing is injected into other processes.
+- Drag to add uses out-of-process `SetWinEventHook` (move/size start/end), one `WM_NCHITTEST` and plain window geometry
+  (Chrome's UI above its web-content child window) to find the drop zone; nothing is injected into other processes.
+  Details: [docs/drag-drop-analysis.md](docs/drag-drop-analysis.md).
 
 ### Build the native helper
 
@@ -346,7 +353,9 @@ VS Code (its own `--user-data-dir`), and inject **real mouse and keyboard input*
 # one-time: build the Win32 test helper
 & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /out:tests\bin\probe.exe /r:System.Drawing.dll tests\probe.cs
 powershell -File tests\dev-host.ps1
+powershell -File tests\unit\run.ps1     # unit tests of the drag-to-add decisions (no UI)
 node tests\e2e.mjs <workDir>             # switching, focus, omnibox, restore, drag to add
+node tests\drag_test.mjs <workDir> [10]  # drag to add: maximized/normal Chrome, several programs, Snap, Esc, success rate
 node tests\compat_test.mjs <workDir>     # VS Code, Notepad, Explorer, Calculator, Character Map
 node tests\update_test.mjs <workDir> dist\ChromeAppTabs-vX.Y.Z.zip   # install/update/rollback in an isolated folder
 powershell -File tests\dev-host.ps1 -Remove

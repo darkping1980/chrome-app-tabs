@@ -1,4 +1,4 @@
-# Chrome App Tabs – Install, Update, Use, Uninstall (v0.3.2)
+# Chrome App Tabs – Install, Update, Use, Uninstall (v0.3.3)
 
 Latest version, screenshots and FAQ: https://github.com/darkping1980/chrome-app-tabs
 (A Korean version of this manual is in `MANUAL_KO.md`. The program's own messages are in Korean.)
@@ -23,10 +23,10 @@ It overlays the real program window on Chrome's page area; it never modifies, in
 4. In the **folder picker** (not the Chrome address bar!), enter `%LOCALAPPDATA%\ChromeAppTabs\app\extension` and select the
    **`extension` folder** (do not open `manifest.json`).
 5. Check that App Tabs is enabled with ID `bahmlmpijalpgcnbnkgplggendgjhdlk`, pin it from the puzzle icon, and open its popup:
-   it should show **호스트 v0.3.2 연결됨** (host v0.3.2 connected).
+   it should show **호스트 v0.3.3 연결됨** (host v0.3.3 connected).
 
 ## 3. Use
-- **Drag and drop:** drag a program's title bar onto a Chrome tab strip; release over the blue drop zone. Esc cancels.
+- **Drag and drop:** drag a program's title bar onto the top of a Chrome window (tab strip or address bar row); release over the blue drop zone. Esc cancels.
 - **Popup:** App Tabs icon → **프로그램 추가** (Add program) → click a window. Use the search box to filter.
 - Click a web tab to see the web page; click the program tab to see the program again.
 - Popup → **연결된 프로그램** (Connected programs): rename (edit + Enter), **이동** (go to), **탭 다시 열기** (reopen tab), **연결 해제** (disconnect; the program keeps running).
@@ -49,7 +49,7 @@ The last 3 versions are kept in `%LOCALAPPDATA%\ChromeAppTabs\backup`; to go bac
 | Popup says the host is not connected | Run `check.ps1`; run `Install-or-Update.cmd` again; reload the extension (↻). |
 | Popup says a new version was installed | Reload the extension (↻) in `chrome://extensions`. |
 | Window left in a wrong place | Popup → **연결 해제**, or turn the extension off and on. |
-| Drag onto a maximized Chrome maximizes the program | Windows Snap wins at the top of the screen: un-maximize Chrome or add from the popup. |
+| Drag onto a maximized Chrome maximizes or snaps the program | The top screen edge belongs to Windows Snap: release a little lower (tabs or address bar). After touching the edge, move down once before dropping. |
 | Log file | `%LOCALAPPDATA%\ChromeAppTabs\host.log` |
 
 ## 6. Uninstall

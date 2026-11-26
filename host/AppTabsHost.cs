@@ -96,6 +96,8 @@ namespace AppTabs
         public bool Peeking;        // temporarily behind Chrome because the omnibox has focus
         public DateTime ActivatedAt;
         public N.WINDOWPLACEMENT Original;
+        public N.RECT OriginalRect; // snapped windows only: their actual screen rect (Original.normal is the pre-snap size)
+        public bool HasOriginalRect;
         public N.RECT LastTarget;
     }
 
@@ -115,7 +117,7 @@ namespace AppTabs
         public static string Mode = "zorder"; // how to "hide": zorder (put behind Chrome) | minimize
         public static bool PeekOnOmnibox = true; // drop the app behind Chrome while the omnibox has focus
         static int repositions, peeks;
-        const string Version = "0.3.2";
+        const string Version = "0.3.3";
 
         [STAThread]
         static int Main(string[] args)
@@ -141,8 +143,8 @@ namespace AppTabs
             stdout = Console.OpenStandardOutput();
             ui = new Control(); ui.CreateControl(); var h = ui.Handle;
             hookProc = OnWinEvent;
-            N.SetWinEventHook(N.EVENT_SYSTEM_FOREGROUND, N.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, hookProc, 0, 0, N.WINEVENT_OUTOFCONTEXT | N.WINEVENT_SKIPOWNPROCESS);
-            N.SetWinEventHook(N.EVENT_SYSTEM_MINIMIZESTART, N.EVENT_SYSTEM_MINIMIZEEND, IntPtr.Zero, hookProc, 0, 0, N.WINEVENT_OUTOFCONTEXT | N.WINEVENT_SKIPOWNPROCESS);
+            GlobalHooks.Add(N.SetWinEventHook(N.EVENT_SYSTEM_FOREGROUND, N.EVENT_SYSTEM_FOREGROUND, IntPtr.Zero, hookProc, 0, 0, N.WINEVENT_OUTOFCONTEXT | N.WINEVENT_SKIPOWNPROCESS));
+            GlobalHooks.Add(N.SetWinEventHook(N.EVENT_SYSTEM_MINIMIZESTART, N.EVENT_SYSTEM_MINIMIZEEND, IntPtr.Zero, hookProc, 0, 0, N.WINEVENT_OUTOFCONTEXT | N.WINEVENT_SKIPOWNPROCESS));
 
             liveTimer = new System.Windows.Forms.Timer { Interval = 1000 };
             liveTimer.Tick += delegate { CheckAlive(); };
@@ -177,7 +179,21 @@ namespace AppTabs
             }
             catch (Exception e) { Log("read error " + e.Message); }
             Log("stdin closed -> restoring all and exiting");
-            ui.Invoke((Action)(() => { foreach (var a in Att.Values.ToList()) Restore(a); Att.Clear(); SaveState(); Application.Exit(); }));
+            ui.Invoke((Action)(() => { foreach (var a in Att.Values.ToList()) Restore(a); Att.Clear(); SaveState(); UnhookAll(); Application.Exit(); }));
+        }
+
+        // Stop every callback source before the process ends: a WinEvent or UI Automation callback arriving while the
+        // runtime shuts down ended the process with an unhandled exception (0xC0020001) after a clean restore.
+        static readonly List<IntPtr> GlobalHooks = new List<IntPtr>();
+        static void UnhookAll()
+        {
+            foreach (var h in GlobalHooks.Concat(LocHooks.Values).Concat(ShowHooks.Values)) if (h != IntPtr.Zero) N.UnhookWinEvent(h);
+            GlobalHooks.Clear(); LocHooks.Clear(); ShowHooks.Clear();
+            if (dragTimer != null) dragTimer.Stop();
+            if (liveTimer != null) liveTimer.Stop();
+            // UIA removes its handlers on its own threads; never wait for it for long
+            var t = new Thread(() => { try { System.Windows.Automation.Automation.RemoveAllEventHandlers(); } catch { } }) { IsBackground = true };
+            t.SetApartmentState(ApartmentState.MTA); t.Start(); t.Join(1500);
         }
 
         static bool ReadExact(Stream s, byte[] b, int n)
@@ -311,11 +327,12 @@ namespace AppTabs
             }
             foreach (var other in Att.Values.ToList())
                 if (other.App == hwnd) { Restore(other); Att.Remove(other.Id); } // one tab per external window
-            a = new Attachment { Id = id, Token = token, App = hwnd, AppPid = N.Pid(hwnd), Original = OriginalPlacementFor(hwnd) };
+            var orig = OriginalFor(hwnd);
+            a = new Attachment { Id = id, Token = token, App = hwnd, AppPid = N.Pid(hwnd), Original = orig.Placement, OriginalRect = orig.Rect, HasOriginalRect = orig.Arranged };
             Att[id] = a;
             HookLocation(a.AppPid);
             SaveState();
-            Log("attach " + id + " hwnd=" + hwnd + " '" + N.Text(hwnd) + "'");
+            Log("attach " + id + " hwnd=" + hwnd + " '" + N.Text(hwnd) + "' original=" + DropLogic.Str(orig.Rect) + " showCmd=" + orig.Placement.showCmd + (orig.Arranged ? " snapped" : ""));
             return "attached";
         }
 
@@ -461,6 +478,16 @@ namespace AppTabs
             var p = a.Original;
             if (p.showCmd == 2 /*SW_SHOWMINIMIZED*/) p.showCmd = 1; // never leave it minimized after a detach
             N.SetWindowPlacement(a.App, ref p);
+            if (a.HasOriginalRect) RestoreRect(a.App, p.showCmd, a.OriginalRect);
+        }
+
+        // A window snapped by Windows (half screen, Snap layouts) has a placement whose "normal" rect is its size from
+        // BEFORE snapping. Putting back its actual rect afterwards returns it exactly where it was. Only for windows that
+        // were in the normal state, and only if that rect is still on a monitor (monitors may have changed meanwhile).
+        static void RestoreRect(IntPtr h, int showCmd, N.RECT r)
+        {
+            if (showCmd != 1 /*SW_SHOWNORMAL*/ || !N2.OnSomeMonitor(r) || DropLogic.SameRect(N.Rect(h), r)) return;
+            N.SetWindowPos(h, IntPtr.Zero, r.L, r.T, r.W, r.H, N.SWP_NOZORDER | N.SWP_NOACTIVATE | N.SWP_NOOWNERZORDER);
         }
 
         // ---------------- WinEvent hooks: keep the overlay in sync ----------------
@@ -656,9 +683,12 @@ namespace AppTabs
         // ---------------- crash safety ----------------
         static void SaveState()
         {
-            var list = Att.Values.Select(a => new Dictionary<string, object> {
-                { "hwnd", a.App.ToInt64() }, { "pid", a.AppPid }, { "showCmd", a.Original.showCmd },
-                { "l", a.Original.normal.L }, { "t", a.Original.normal.T }, { "r", a.Original.normal.R }, { "b", a.Original.normal.B } }).ToList();
+            var list = Att.Values.Select(a => {
+                var e = new Dictionary<string, object> {
+                    { "hwnd", a.App.ToInt64() }, { "pid", a.AppPid }, { "showCmd", a.Original.showCmd },
+                    { "l", a.Original.normal.L }, { "t", a.Original.normal.T }, { "r", a.Original.normal.R }, { "b", a.Original.normal.B } };
+                if (a.HasOriginalRect) { e["sl"] = a.OriginalRect.L; e["st"] = a.OriginalRect.T; e["sr"] = a.OriginalRect.R; e["sb"] = a.OriginalRect.B; }
+                return e; }).ToList();
             File.WriteAllText(stateFile, Json.Serialize(list));
         }
 
@@ -677,6 +707,8 @@ namespace AppTabs
                     p.showCmd = Convert.ToInt32(e["showCmd"]); if (p.showCmd == 2) p.showCmd = 1;
                     p.normal.L = Convert.ToInt32(e["l"]); p.normal.T = Convert.ToInt32(e["t"]); p.normal.R = Convert.ToInt32(e["r"]); p.normal.B = Convert.ToInt32(e["b"]);
                     N.SetWindowPlacement(h, ref p); n++;
+                    if (e.ContainsKey("sl")) // written by v0.3.3+: the actual rect (e.g. while snapped)
+                        RestoreRect(h, p.showCmd, new N.RECT { L = Convert.ToInt32(e["sl"]), T = Convert.ToInt32(e["st"]), R = Convert.ToInt32(e["sr"]), B = Convert.ToInt32(e["sb"]) });
                 }
             }
             catch (Exception ex) { Log("restore error " + ex.Message); }

@@ -41,6 +41,20 @@ static class P
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
     [DllImport("user32.dll")] static extern uint SendInput(uint n, INPUT[] i, int size);
     [DllImport("user32.dll", EntryPoint = "SendInput")] static extern uint SendMouse(uint n, MINPUT[] i, int size);
+    [DllImport("user32.dll")] static extern int GetSystemMetrics(int i);
+    [DllImport("user32.dll")] static extern bool GetCursorPos(out Point p);
+    // a real mouse-move input event (like a physical mouse), absolute on the virtual desktop. Some title bars
+    // (e.g. WinUI apps such as Windows 11 Notepad) start a window move only from real pointer input, not SetCursorPos.
+    static void MoveInput(int x, int y)
+    {
+        int vx = GetSystemMetrics(76), vy = GetSystemMetrics(77), vw = GetSystemMetrics(78), vh = GetSystemMetrics(79);
+        var m = new MINPUT[1]; m[0].type = 0;
+        m[0].mi.dx = (int)Math.Round((x - vx) * 65535.0 / (vw - 1)); m[0].mi.dy = (int)Math.Round((y - vy) * 65535.0 / (vh - 1));
+        m[0].mi.flags = 0x0001 | 0x8000 | 0x4000; // MOVE | ABSOLUTE | VIRTUALDESK
+        SendMouse(1, m, Marshal.SizeOf(typeof(MINPUT)));
+        Point c; GetCursorPos(out c);
+        if (c.X != x || c.Y != y) SetCursorPos(x, y); // rounding of the normalized coordinates
+    }
     [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] static extern IntPtr WindowFromPoint(Point p);
     [DllImport("user32.dll")] static extern IntPtr GetAncestor(IntPtr h, uint f);
@@ -104,6 +118,13 @@ static class P
             case "setpos": SetWindowPos(H(a[1]), IntPtr.Zero, int.Parse(a[2]), int.Parse(a[3]), int.Parse(a[4]), int.Parse(a[5]), 0x4 | 0x10); return 0;
             case "show": ShowWindow(H(a[1]), int.Parse(a[2])); return 0;
             case "close": PostMessage(H(a[1]), 0x0010 /*WM_CLOSE*/, IntPtr.Zero, IntPtr.Zero); return 0; // polite close (the app may ask to save)
+            case "nchit": // nchit hwnd x y : WM_NCHITTEST answer at a screen point (2 = caption)
+                {
+                    IntPtr r; var l = new IntPtr(((int.Parse(a[3]) & 0xFFFF) << 16) | (int.Parse(a[2]) & 0xFFFF));
+                    if (SendMessageTimeout(H(a[1]), 0x0084, IntPtr.Zero, l, 2, 500, out r) == IntPtr.Zero) { Console.WriteLine("-1"); return 0; }
+                    Console.WriteLine((short)(r.ToInt64() & 0xFFFF)); return 0;
+                }
+            case "sysclose": PostMessage(H(a[1]), 0x0112 /*WM_SYSCOMMAND*/, new IntPtr(0xF060) /*SC_CLOSE*/, IntPtr.Zero); return 0; // like the X button (Windows 11 Notepad ignores WM_CLOSE)
             case "focus":
                 {
                     var h = H(a[1]); var fg = GetForegroundWindow(); uint d; uint t = GetWindowThreadProcessId(fg, out d);
@@ -132,6 +153,28 @@ static class P
                     for (int i = 1; i <= n; i++) { SetCursorPos(x1 + (x2 - x1) * i / n, y1 + (y2 - y1) * i / n); Thread.Sleep(16); }
                     Thread.Sleep(a.Length > 7 ? int.Parse(a[7]) : 80); // optional hold before release
                     if (a.Length > 8 && a[8] == "esc") { Key(0x1B, (char)0, 0); Key(0x1B, (char)0, 2); Thread.Sleep(150); } // cancel the move loop
+                    m[0].mi.flags = 4; SendMouse(1, m, Marshal.SizeOf(typeof(MINPUT)));
+                    Console.WriteLine("dragged"); return 0;
+                }
+            case "dragpath": // dragpath stepMs holdMs allowedHwnds x1 y1 x2 y2 [x3 y3 ...] [esc] : real drag through waypoints (~12 px per step)
+                {
+                    int stepMs = int.Parse(a[1]), hold = int.Parse(a[2]);
+                    bool esc = a[a.Length - 1] == "esc"; int nArgs = a.Length - 4 - (esc ? 1 : 0);
+                    var pts = new List<Point>();
+                    for (int i = 0; i + 1 < nArgs; i += 2) pts.Add(new Point(int.Parse(a[4 + i]), int.Parse(a[5 + i])));
+                    var under = GetAncestor(WindowFromPoint(pts[0]), 2);
+                    if (!Allowed(under, a[3])) { Console.WriteLine("ABORT: point is over " + under + " '" + Txt(under) + "'"); return 2; }
+                    SetCursorPos(pts[0].X, pts[0].Y); MoveInput(pts[0].X, pts[0].Y);
+                    var m = new MINPUT[1]; m[0].type = 0; m[0].mi.flags = 2; SendMouse(1, m, Marshal.SizeOf(typeof(MINPUT)));
+                    Thread.Sleep(80);
+                    for (int k = 1; k < pts.Count; k++)
+                    {
+                        Point f = pts[k - 1], t = pts[k];
+                        int n = Math.Max(1, (int)(Math.Sqrt((t.X - f.X) * (t.X - f.X) + (t.Y - f.Y) * (t.Y - f.Y)) / 12));
+                        for (int i = 1; i <= n; i++) { MoveInput(f.X + (t.X - f.X) * i / n, f.Y + (t.Y - f.Y) * i / n); if (stepMs > 0) Thread.Sleep(stepMs); }
+                    }
+                    Thread.Sleep(hold);
+                    if (esc) { Key(0x1B, (char)0, 0); Key(0x1B, (char)0, 2); Thread.Sleep(150); }
                     m[0].mi.flags = 4; SendMouse(1, m, Marshal.SizeOf(typeof(MINPUT)));
                     Console.WriteLine("dragged"); return 0;
                 }
@@ -196,7 +239,7 @@ static class P
         switch (k)
         {
             case "ctrl": return 0x11; case "shift": return 0x10; case "alt": return 0x12; case "enter": return 0x0D; case "esc": return 0x1B;
-            case "tab": return 0x09; case "`": return 0xC0; case "pgup": return 0x21; case "pgdn": return 0x22; case "f4": return 0x73;
+            case "tab": return 0x09; case "`": return 0xC0; case "pgup": return 0x21; case "pgdn": return 0x22; case "f4": return 0x73; case "win": return 0x5B; case "left": return 0x25; case "right": return 0x27; case "up": return 0x26; case "down": return 0x28;
             default: return (ushort)char.ToUpper(k[0]);
         }
     }
