@@ -87,7 +87,7 @@ Chrome 확장 프로그램과 네이티브 도우미는 Chrome 공식 [Native Me
 2. **Assets**에서 최신 안정 버전 **`ChromeAppTabs-vX.Y.Z.zip`**을 내려받습니다.
 3. (선택) 파일이 손상되지 않았는지 확인합니다. 같은 페이지의 `.sha256` 파일 값과 비교합니다.
    ```powershell
-   Get-FileHash .\ChromeAppTabs-v0.3.3.zip -Algorithm SHA256
+   Get-FileHash .\ChromeAppTabs-v0.3.4.zip -Algorithm SHA256
    ```
 
 ### 2단계 – 압축 해제와 설치 스크립트 실행
@@ -115,7 +115,7 @@ Chrome 확장 프로그램과 네이티브 도우미는 Chrome 공식 [Native Me
 11. **`extension`** 폴더가 열린(또는 선택된) 상태에서 **폴더 선택**을 누릅니다.
 12. **App Tabs** 카드가 나타나고 활성화되어 있는지 확인합니다. ID는 `bahmlmpijalpgcnbnkgplggendgjhdlk`입니다.
 13. Chrome 도구 모음의 **퍼즐 아이콘**(확장 프로그램)을 누르고 App Tabs를 **고정**합니다.
-14. **App Tabs** 아이콘을 눌러 팝업 오른쪽 위에 **호스트 v0.3.3 연결됨**이 표시되는지 확인합니다.
+14. **App Tabs** 아이콘을 눌러 팝업 오른쪽 위에 **호스트 v0.3.4 연결됨**이 표시되는지 확인합니다.
 15. 팝업의 **설정**에서 **프로그램 제목 표시줄을 Chrome 탭 표시줄로 끌어다 놓아 추가**가 켜져 있는지 확인합니다(기본값: 켜짐).
 
 > **자주 하는 실수**

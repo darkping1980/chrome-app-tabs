@@ -89,7 +89,7 @@ You do not need to clone or build anything. Everything comes from the GitHub rel
 2. Under **Assets**, download **`ChromeAppTabs-vX.Y.Z.zip`** (the latest stable version).
 3. (Optional) Check that the download is not damaged. Compare the result with the `.sha256` file on the same page:
    ```powershell
-   Get-FileHash .\ChromeAppTabs-v0.3.3.zip -Algorithm SHA256
+   Get-FileHash .\ChromeAppTabs-v0.3.4.zip -Algorithm SHA256
    ```
 
 ### Step 2 – Extract and run the installer
@@ -117,7 +117,7 @@ You do not need to clone or build anything. Everything comes from the GitHub rel
 11. With the **`extension`** folder open (or selected), click **Select Folder**.
 12. The **App Tabs** card appears and is enabled. Its ID is `bahmlmpijalpgcnbnkgplggendgjhdlk`.
 13. Click the **puzzle icon** (Extensions) in the Chrome toolbar and **pin** App Tabs.
-14. Click the **App Tabs** icon. The badge at the top right should say **호스트 v0.3.3 연결됨** ("host v0.3.3 connected").
+14. Click the **App Tabs** icon. The badge at the top right should say **호스트 v0.3.4 연결됨** ("host v0.3.4 connected").
 15. In the popup's **설정** (Settings) section, check that **프로그램 제목 표시줄을 Chrome 탭 표시줄로 끌어다 놓아 추가** (drag-and-drop) is ticked. It is on by default.
 
 > **Common mistakes**
@@ -358,6 +358,9 @@ node tests\e2e.mjs <workDir>             # switching, focus, omnibox, restore, d
 node tests\drag_test.mjs <workDir> [10]  # drag to add: maximized/normal Chrome, several programs, Snap, Esc, success rate
 node tests\compat_test.mjs <workDir>     # VS Code, Notepad, Explorer, Calculator, Character Map
 node tests\update_test.mjs <workDir> dist\ChromeAppTabs-vX.Y.Z.zip   # install/update/rollback in an isolated folder
+# taskbar flashing: shell-hook observer + switching scenarios (mouse, shortcuts, quick cycling, omnibox peek)
+& "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:winexe /r:System.Windows.Forms.dll /out:tests\bin\flashwatch.exe tests\flashwatch.cs
+node tests\flash_test.mjs <workDir> <label> [rounds=3]               # see the header for the SQL Developer caveat
 powershell -File tests\dev-host.ps1 -Remove
 ```
 

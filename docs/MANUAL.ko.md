@@ -1,4 +1,4 @@
-# Chrome App Tabs 설치·업데이트·사용·제거 설명서 (v0.3.3)
+# Chrome App Tabs 설치·업데이트·사용·제거 설명서 (v0.3.4)
 
 최신 버전, 스크린샷, FAQ: https://github.com/darkping1980/chrome-app-tabs
 
@@ -22,7 +22,7 @@ App Tabs는 지금 쓰고 있는 Chrome의 탭 표시줄에 **이미 실행 중�
 1. GitHub 저장소의 **Releases**에서 최신 `ChromeAppTabs-vX.Y.Z.zip`을 내려받습니다.
 2. (선택) 같은 페이지의 `.sha256` 파일 값과 비교해 파일이 손상되지 않았는지 확인할 수 있습니다.
    ```powershell
-   Get-FileHash .\ChromeAppTabs-v0.3.3.zip -Algorithm SHA256
+   Get-FileHash .\ChromeAppTabs-v0.3.4.zip -Algorithm SHA256
    ```
 3. zip 파일을 마우스 오른쪽 버튼으로 눌러 **압축 풀기**를 합니다. 위치는 아무 곳이나 괜찮습니다(예: 다운로드 폴더).
 
@@ -38,7 +38,7 @@ App Tabs는 지금 쓰고 있는 Chrome의 탭 표시줄에 **이미 실행 중�
    2. **압축해제된 확장 프로그램을 로드합니다**를 누르고 다음 폴더를 선택합니다.
       `%LOCALAPPDATA%\ChromeAppTabs\app\extension` (탐색기 주소창에 그대로 입력하면 이동합니다)
    3. App Tabs의 ID가 `bahmlmpijalpgcnbnkgplggendgjhdlk`인지 확인합니다.
-3. 툴바의 **App Tabs** 아이콘을 누르면 오른쪽 위에 **호스트 v0.3.3 연결됨**이 표시됩니다.
+3. 툴바의 **App Tabs** 아이콘을 누르면 오른쪽 위에 **호스트 v0.3.4 연결됨**이 표시됩니다.
 
 ## 4. 업데이트 (예: v0.2.0 → v0.3.0)
 1. 새 버전 zip을 내려받아 압축을 풀고 **`Install-or-Update.cmd`**를 실행합니다.
@@ -115,7 +115,7 @@ App Tabs는 지금 쓰고 있는 Chrome의 탭 표시줄에 **이미 실행 중�
    - 연결돼 있던 창을 원래 위치로 되돌린 뒤 레지스트리 키와 설치 폴더를 지웁니다.
    - Chrome과 다른 프로그램은 종료하지 않습니다.
 
-## 8. 알려진 한계 (v0.3.3)
+## 8. 알려진 한계 (v0.3.4)
 - **화면 맨 위 가장자리**는 Windows Snap(최대화, 스냅 레이아웃) 영역입니다. 그곳에서 놓으면 탭은 추가되지 않고 Windows가 창을 배치합니다. 데이터에는 영향이 없습니다. 탭이나 주소창 위에서 놓으세요.
 - 프로그램 자체 제목 표시줄이 보이고, 그 안의 닫기(X)를 누르면 프로그램이 실제로 종료됩니다.
 - 업데이트 후 확장 새로고침(↻)은 직접 눌러야 하며, 새로고침하면 프로그램 탭이 닫힙니다("탭 다시 열기"로 복구).

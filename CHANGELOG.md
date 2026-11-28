@@ -2,6 +2,40 @@
 
 All notable changes to Chrome App Tabs are listed here. Versions follow `MAJOR.MINOR.PATCH`.
 
+## [0.3.4] – 2026-11-28
+
+Program icons in the Windows **taskbar no longer flash or stay highlighted** (orange/red) after switching tabs.
+
+### Fixed
+- Switching to a program tab made Windows flash that program's taskbar button, and after quick switching several
+  buttons could stay highlighted until the program was clicked. The helper asked Windows to bring the program to the
+  front with a plain `SetForegroundWindow` first. The helper is a background process, so Windows refused that request
+  and flashed the button "until the window comes to the foreground". The helper's second step then activated the
+  program, but when the user moved on within about a second, Windows kept flashing it and left it highlighted.
+  The helper now never makes the refused request: it asks only while borrowing the foreground thread's input state
+  (`AttachThreadInput`, released in all cases), checks the real result, and does nothing if the program is already in
+  front. The old plain request and the synthetic ALT tap are kept only as fallbacks when that is not possible.
+  Taskbar notifications are not changed or suppressed; a program's own flashing still works.
+
+### Added
+- One `fg ...` line in `host.log` per focus request (which step worked, foreground before/after) and counters in the
+  `stats` reply.
+- `tests/flashwatch.cs` (passive shell-hook observer of taskbar flash events) and `tests/flash_test.mjs`
+  (taskbar-flash scenarios with real input).
+
+### Tested / known issues
+- Taskbar-flash test (isolated Chrome, VS Code, DBeaver and a second SQL Developer; 55 steps: tab clicks, global
+  shortcuts, quick cycling with 10 s idle, omnibox peek with Esc and click): v0.3.3 49 flash events, 3 icons still
+  highlighted after the idle time, 28 of 58 focus requests refused; v0.3.4 0 flash events, none highlighted, none
+  refused, no synthetic ALT, 55/55 steps with the shown program also focused (3 runs, 0 flashes each).
+- Unit tests 46/46. `e2e` steps 1–9: 43/47 pass; the 4 failures (omnibox peek 6b1/6b1r/6b2, Chrome drag sync 7b2) also
+  fail with v0.3.3 (13 failures there) on the test PC.
+- Not run / not completed: `e2e` from step 10 and `compat` stop at `chrome.windows.create` on the test PC's monitor
+  layout (left monitor at 150 %: "Bounds must be at least 50% within visible screen space"); `drag_test` did not run
+  (the test helper `probe.exe` was out of date); `profile_impact` and `update_test` were not run.
+- Test isolation: a second SQL Developer instance could not be given its own settings folder and wrote window layout
+  files into the user's `%APPDATA%\SQL Developer` when it started (see the header of `tests/flash_test.mjs`).
+
 ## [0.3.3] – 2026-11-26
 
 More reliable drag and drop, especially onto a **maximized** Chrome window. Background:

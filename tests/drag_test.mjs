@@ -88,7 +88,7 @@ const swT = (await waitFor(async () => (await cdp.send('Target.getTargets')).tar
 const { sessionId } = await cdp.send('Target.attachToTarget', { targetId: swT.targetId, flatten: true });
 const ev = (e) => cdp.eval(sessionId, e);
 const ping = await ev(`call('ping')`);
-check('DEV host connected', ping.version === '0.3.3', JSON.stringify(ping));
+check('DEV host connected', ping.version === '0.3.4', JSON.stringify(ping));
 const chrome = pj('find', 'Chrome_WidgetWin_1', 'WEB PAGE', proc.pid)[0].hwnd;
 // tab events seen by the extension, to diagnose a failed attempt
 await ev(`self.__tev=[];const T=()=>Date.now()%1e6;chrome.tabs.onCreated.addListener(t=>__tev.push('created '+t.id+' @'+T()));chrome.tabs.onRemoved.addListener(i=>__tev.push('removed '+i+' @'+T()));chrome.tabs.onActivated.addListener(a=>__tev.push('activated '+a.tabId+' @'+T()));true`);

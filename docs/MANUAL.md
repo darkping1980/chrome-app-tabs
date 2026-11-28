@@ -1,4 +1,4 @@
-# Chrome App Tabs – Install, Update, Use, Uninstall (v0.3.3)
+# Chrome App Tabs – Install, Update, Use, Uninstall (v0.3.4)
 
 Latest version, screenshots and FAQ: https://github.com/darkping1980/chrome-app-tabs
 (A Korean version of this manual is in `MANUAL_KO.md`. The program's own messages are in Korean.)
@@ -23,7 +23,7 @@ It overlays the real program window on Chrome's page area; it never modifies, in
 4. In the **folder picker** (not the Chrome address bar!), enter `%LOCALAPPDATA%\ChromeAppTabs\app\extension` and select the
    **`extension` folder** (do not open `manifest.json`).
 5. Check that App Tabs is enabled with ID `bahmlmpijalpgcnbnkgplggendgjhdlk`, pin it from the puzzle icon, and open its popup:
-   it should show **호스트 v0.3.3 연결됨** (host v0.3.3 connected).
+   it should show **호스트 v0.3.4 연결됨** (host v0.3.4 connected).
 
 ## 3. Use
 - **Drag and drop:** drag a program's title bar onto the top of a Chrome window (tab strip or address bar row); release over the blue drop zone. Esc cancels.

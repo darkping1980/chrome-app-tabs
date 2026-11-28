@@ -117,7 +117,7 @@ namespace AppTabs
         public static string Mode = "zorder"; // how to "hide": zorder (put behind Chrome) | minimize
         public static bool PeekOnOmnibox = true; // drop the app behind Chrome while the omnibox has focus
         static int repositions, peeks;
-        const string Version = "0.3.3";
+        const string Version = "0.3.4";
 
         [STAThread]
         static int Main(string[] args)
@@ -243,7 +243,8 @@ namespace AppTabs
                     case "stats":
                         var p = Process.GetCurrentProcess(); p.Refresh();
                         reply["workingSetMB"] = p.WorkingSet64 / 1048576.0; reply["cpuMs"] = p.TotalProcessorTime.TotalMilliseconds;
-                        reply["repositions"] = repositions; reply["peeks"] = peeks; reply["drops"] = dropsReported; reply["highlight"] = highlight != null && N.IsWindowVisible(highlight.Handle); reply["dragging"] = drag != null; reply["attached"] = Att.Count; reply["dataDir"] = dataDir; break;
+                        reply["repositions"] = repositions; reply["peeks"] = peeks; reply["drops"] = dropsReported; reply["highlight"] = highlight != null && N.IsWindowVisible(highlight.Handle); reply["dragging"] = drag != null; reply["attached"] = Att.Count; reply["dataDir"] = dataDir;
+                        reply["foreground"] = new Dictionary<string, object> { { "calls", fgCalls }, { "already", fgAlready }, { "attachOk", fgAttachOk }, { "plain", fgPlain }, { "alt", fgAlt }, { "failed", fgFailed } }; break;
                     default: throw new Exception("unknown cmd " + cmd);
                 }
             }
@@ -427,20 +428,71 @@ namespace AppTabs
             repositions++;
         }
 
+        // Gives h the keyboard focus. This host is never entitled to do that by itself (it has no window and gets no user
+        // input), and Windows answers a REFUSED SetForegroundWindow by flashing h's taskbar button "until h is in the
+        // foreground". The attach step below then activates h, but when the user moves on to another tab within about a
+        // second, the flash timer finds h in the background again and the button keeps flashing and stays highlighted.
+        // So the bare call is never made while another window is in the foreground: the request is made only while
+        // borrowing the foreground thread's input state (AttachThreadInput), where it is not refused.
+        static int fgCalls, fgAlready, fgAttachOk, fgPlain, fgAlt, fgFailed;
         static void ForceForeground(IntPtr h)
         {
-            if (N.SetForegroundWindow(h) && N.GetForegroundWindow() == h) return;
-            // Foreground lock: borrow the foreground thread's input state, the documented-but-discouraged workaround.
-            IntPtr fg = N.GetForegroundWindow();
-            uint dummy; uint fgThread = N.GetWindowThreadProcessId(fg, out dummy), me = N.GetCurrentThreadId();
-            N.AttachThreadInput(me, fgThread, true);
-            N.BringWindowToTop(h); N.SetForegroundWindow(h);
-            N.AttachThreadInput(me, fgThread, false);
-            if (N.GetForegroundWindow() != h)
-            {   // last resort: a synthetic ALT tap makes this process "last input" owner
-                N.keybd_event(0x12, 0, 0, UIntPtr.Zero); N.keybd_event(0x12, 0, 2, UIntPtr.Zero);
-                N.SetForegroundWindow(h);
+            var sw = Stopwatch.StartNew(); fgCalls++;
+            IntPtr before = N.GetForegroundWindow();
+            if (IsForeground(h, before)) { fgAlready++; FgLog(h, before, "already", null, sw); return; }
+            uint dummy, me = N.GetCurrentThreadId();
+            uint fgThread = before == IntPtr.Zero ? 0 : N.GetWindowThreadProcessId(before, out dummy);
+            bool att = false, r2 = false;
+            if (fgThread != 0 && fgThread != me)
+            {
+                try
+                {
+                    att = N.AttachThreadInput(me, fgThread, true);
+                    if (att) { N.BringWindowToTop(h); r2 = N.SetForegroundWindow(h); }
+                }
+                finally { if (att) N.AttachThreadInput(me, fgThread, false); } // never leave the input states joined
             }
+            string how = "attach";
+            if (!att)
+            {   // no foreground window, or its input state cannot be borrowed (e.g. a hung or elevated program):
+                // a plain request as before (Windows may refuse it and flash h's button)
+                how = "plain"; fgPlain++;
+                N.BringWindowToTop(h); r2 = N.SetForegroundWindow(h);
+            }
+            // activation of another thread's window completes asynchronously: check the real result before escalating
+            if (WaitForeground(h, 100)) { if (att) fgAttachOk++; FgLog(h, before, how, "attach=" + att + " r2=" + r2, sw); return; }
+            // last resort, unchanged: a synthetic ALT tap makes this process "last input" owner
+            fgAlt++;
+            N.keybd_event(0x12, 0, 0, UIntPtr.Zero); N.keybd_event(0x12, 0, 2, UIntPtr.Zero);
+            bool r3 = N.SetForegroundWindow(h);
+            bool ok = WaitForeground(h, 100);
+            if (!ok) fgFailed++;
+            FgLog(h, before, ok ? how + "+alt" : "FAILED", "attach=" + att + " r2=" + r2 + " r3=" + r3, sw);
+        }
+
+        // h itself, or a window owned by h (a program may hand its activation to its own dialog), is in the foreground
+        static bool IsForeground(IntPtr h, IntPtr fg)
+        {
+            return fg != IntPtr.Zero && (fg == h || N.GetAncestor(fg, 3 /*GA_ROOTOWNER*/) == h);
+        }
+
+        static bool WaitForeground(IntPtr h, int ms)
+        {
+            var t = Stopwatch.StartNew();
+            while (true)
+            {
+                if (IsForeground(h, N.GetForegroundWindow())) return true;
+                if (t.ElapsedMilliseconds >= ms) return false;
+                Thread.Sleep(5);
+            }
+        }
+
+        // one line per foreground request: which step got it, and what is in the foreground afterwards
+        static void FgLog(IntPtr h, IntPtr before, string how, string detail, Stopwatch sw)
+        {
+            IntPtr after = N.GetForegroundWindow();
+            Log("fg " + how + " target=" + h + " before=" + before + " after=" + after + (IsForeground(h, after) ? "" : " MISMATCH") +
+                (detail != null ? " " + detail : "") + " " + sw.ElapsedMilliseconds + "ms");
         }
 
         static void SendBehind(Attachment a)
